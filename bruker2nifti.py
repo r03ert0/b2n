@@ -1,9 +1,16 @@
 import os
 import nibabel as nib
 import numpy as np
+import re
 import fire
 
 def convertBrukerToNifti1(input_dir,output_path):
+    """
+    Convert Bruker MRI data format into Nifti1. The input is the 'number' directory
+    containing the data files, the output is a compressed nifti file.
+    Bruker data contains a 2dseq file which is a block of raw binary data, often
+    encoded as integer values.
+    """
     # parameter files
     method=input_dir+'/method'
     acqp=input_dir+'/acqp'
@@ -44,6 +51,7 @@ def convertBrukerToNifti1(input_dir,output_path):
             f = open(reco, 'r')
             x = f.readlines()
             f.close()
+            reco_map_slope=[]
             state=0
             for i in x:
                 a=i.split('=');
@@ -51,8 +59,8 @@ def convertBrukerToNifti1(input_dir,output_path):
                     data_type=a[1].replace('\n','')
                     if(data_type=="_16BIT_SGN_INT"):
                         data_type="int16"
-                        datatype=4;
-                        bitpix=16;
+                        datatype=16; # Nifti float
+                        bitpix=32;
                     else:
                         print "ERROR: Unknown data type "+data_type;
                 if(state==1):
@@ -63,17 +71,38 @@ def convertBrukerToNifti1(input_dir,output_path):
                     fovx=float(i.split(' ')[0])*10
                     fovy=float(i.split(' ')[1])*10
                     state=0
+                if(state==3):
+                    v=re.findall(r'([^ \t]+)',i);
+                    for str in v:
+                        try:
+                            val=float(str)
+                            reco_map_slope.append(val)
+                            if(len(reco_map_slope)>=ntotal-1):
+                                state=4
+                        except:
+                            pass
                 if(a[0]=='##$RECO_inp_size'):
                     state=1
                 if(a[0]=='##$RECO_fov'):
                     state=2        
+                if(a[0]=='##$RECO_map_slope'):
+                    state=3
+                    ntotal=int(a[1].split(" ")[1])
+            reco_map_slope=np.array(reco_map_slope)
+            reco_map_slope=np.reshape(reco_map_slope,(dimz,nvols),'F')
 
     # convert binary data to array
     arr0=np.frombuffer(img,data_type);
-    arr=arr0.reshape(dimy,dimx,dimz,nvols,order='F')
+    arr=arr0.reshape(dimy,dimx,dimz,nvols,order='F').astype(float)
     arr=np.swapaxes(arr,0,1)
     arr=np.flip(arr,0)
     arr=np.flip(arr,1)
+
+    # apply reco_map_slope
+    arr.flags.writeable = True
+    for nv in range(0,nvols):
+        print(nv)
+        arr[...,nv]=arr[...,nv]/reco_map_slope[0,nv];
 
     # make a new nifti1 volume
     affine=np.diag([1,1,1,1])
