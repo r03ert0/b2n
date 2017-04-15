@@ -6,8 +6,10 @@ from pandas import DataFrame
 import numpy as np
 import fire
 
-#Extract bvals from 'method' file in a data frame
 def getBvals(path):
+    """
+    Extract bvals from 'method' file in a data frame
+    """
     f = open(path+'/method',"r")
     for line in f:
         if re.search(r'PVM_DwEffBval=',line): #find parameter of bval
@@ -27,8 +29,11 @@ def getBvals(path):
     f.close()
     
 
-#Extract bvecs from 'method' file in a data frame
 def getBvecs(path):
+    """
+    Extract bvecs from 'method' file in a data frame
+    """
+    
     f = open(path+'/method',"r")
 
     for line in f:
@@ -54,13 +59,15 @@ def getBvecs(path):
     bvecs = DataFrame(bvecs_arr) #array in data frame
     bvecs.to_csv(path+'/bvecs', sep=" ", index=False, header=False) #save data frame in a file 
     
-#Get info
-#PVM_Matrix= ==>x, y
-#PVM_SPackArrNSlices= ==>z
-#PVM_SpatResol= ==> resolution in x, y
-#PVM_SPackArrSliceDistance= ==> resolution in z
-#nb bval
 def getInfo(path):
+    """
+    Get info
+    PVM_Matrix= ==>x, y
+    PVM_SPackArrNSlices= ==>z
+    PVM_SpatResol= ==> resolution in x, y
+    PVM_SPackArrSliceDistance= ==> resolution in z
+    nb bval
+    """
     f = open(path+'/method',"r")
 
     for line in f:
@@ -126,11 +133,7 @@ sub=[
 #    getInfo(srcDir+s[0]+s[1])
 
 def main():
-    fire.Fire({
-        'getBvals': getBvals,
-        'getBvecs': getBvecs,
-        'getInfo': getInfo
-    });
+    fire.Fire();
 if __name__ == '__main__':
     main()
 
