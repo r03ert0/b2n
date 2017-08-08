@@ -1,16 +1,18 @@
-### V1, 03.05.2016, Celine ###
 ####### Extract bval and bvec files from the corresponding method file #######
+
+### V1, 03.05.2016, Celine ###
+### V2, 08.08.2017, Roberto ### add output path
 
 import re #regular expression
 from pandas import DataFrame
 import numpy as np
 import fire
 
-def getBvals(path):
+def getBvals(bruker_path, out_path):
     """
     Extract bvals from 'method' file in a data frame
     """
-    f = open(path+'/method',"r")
+    f = open(bruker_path+'/method',"r")
     for line in f:
         if re.search(r'PVM_DwEffBval=',line): #find parameter of bval
             #print line
@@ -25,16 +27,16 @@ def getBvals(path):
                 ne = f.next()
             bval = DataFrame(bval_arr) #array in data frame
             bval=bval.transpose() #transpose data frame to have one line with all the bvals
-            bval.to_csv(path+'/bvals', sep=" ", index=False, header=False) #save data frame in a file 
+            bval.to_csv(out_path+'/bvals', sep=" ", index=False, header=False) #save data frame in a file 
     f.close()
     
 
-def getBvecs(path):
+def getBvecs(bruker_path, out_path):
     """
     Extract bvecs from 'method' file in a data frame
     """
     
-    f = open(path+'/method',"r")
+    f = open(bruker_path+'/method',"r")
 
     for line in f:
         if re.search(r'PVM_DwAoImages=',line):
@@ -57,9 +59,9 @@ def getBvecs(path):
                 ne = f.next() #when all floats of the current line are done, go to the next
     f.close()
     bvecs = DataFrame(bvecs_arr) #array in data frame
-    bvecs.to_csv(path+'/bvecs', sep=" ", index=False, header=False) #save data frame in a file 
+    bvecs.to_csv(out_path+'/bvecs', sep=" ", index=False, header=False) #save data frame in a file 
     
-def getInfo(path):
+def getInfo(bruker_path, out_path):
     """
     Get info
     PVM_Matrix= ==>x, y
@@ -68,7 +70,7 @@ def getInfo(path):
     PVM_SPackArrSliceDistance= ==> resolution in z
     nb bval
     """
-    f = open(path+'/method',"r")
+    f = open(bruker_path+'/method',"r")
 
     for line in f:
         if re.search(r'PVM_DwNDiffExp=',line):
@@ -100,37 +102,8 @@ def getInfo(path):
     info_arr[1][2] = mat_z * res_z
     info_arr[2][0] = nvols
 
-    #print info_arr
     info = DataFrame(info_arr)
-    info.to_csv(path+'/info.txt', sep=" ", index=False, header=False) #save data frame in a file
-
-# Replace with your parameters, rest doesnt need changes #
-srcDir='/pasteur/projets/policy01/cinq/rto/data/ferret/raw-data/'
-sub=[
-    ['F01_Adult','/dti/10'],
-    ['F02_P0','/dti/0'],
-    ['F03_Adult','/dti/9'],
-    ['F04_Adult','/dti/8'],
-    ['F05_Adult','/dti/0'],
-    ['F06_P4','/dti/10'],
-    ['F07_P4','/dti/7'],
-    ['F08_P4','/dti/11'],
-    ['F10_P8','/dti/7'],
-    ['F16_P32','/dti/8'],
-    ['F17_P32','/dti/7'],
-    ['F19_P32','/dti/8'],
-    ['F20_P16','/dti/9'],
-    ['F21_P16','/dti/7'],
-    ['F22_Adult','/dti/14'],
-    ['F22_Adult','/dti/7'],
-    ['F25_P2','/dti/7'],
-    ['F28_P2','/dti/8']
-];
-
-#for s in sub:
-#    getBvals(srcDir+s[0]+s[1])
-#    getBvecs(srcDir+s[0]+s[1])
-#    getInfo(srcDir+s[0]+s[1])
+    info.to_csv(out_path+'/info.csv', sep=" ", index=False, header=False) #save data frame in a file
 
 def main():
     fire.Fire();
